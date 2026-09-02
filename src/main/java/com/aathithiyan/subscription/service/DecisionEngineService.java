@@ -9,6 +9,7 @@ import com.aathithiyan.subscription.mapper.SubscriptionMapper;
 import com.aathithiyan.subscription.repository.PriceHistoryRepository;
 import com.aathithiyan.subscription.repository.SubscriptionRepository;
 import com.aathithiyan.subscription.repository.UserRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,7 @@ public class DecisionEngineService {
         this.subscriptionMapper = subscriptionMapper;
     }
 
+    @Cacheable(value = "overlaps", key = "#userId")
     public List<OverlapGroupResponse> getOverlaps(Long userId) {
         validateUserExists(userId);
         List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId);
@@ -56,6 +58,7 @@ public class DecisionEngineService {
                 .toList();
     }
 
+    @Cacheable(value = "renewal_risks", key = "#userId")
     public List<RenewalRiskResponse> getRenewalRisks(Long userId) {
         validateUserExists(userId);
         List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId);
@@ -80,6 +83,7 @@ public class DecisionEngineService {
         return responses;
     }
 
+    @Cacheable(value = "efficiency_scores", key = "#userId")
     public List<EfficiencyScoreResponse> getEfficiencyScores(Long userId) {
         validateUserExists(userId);
         List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId);
@@ -101,6 +105,7 @@ public class DecisionEngineService {
                 .toList();
     }
 
+    @Cacheable(value = "optimization_opportunities", key = "#userId")
     public List<OptimizationOpportunityResponse> getOptimizationOpportunities(Long userId) {
         validateUserExists(userId);
         List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId);

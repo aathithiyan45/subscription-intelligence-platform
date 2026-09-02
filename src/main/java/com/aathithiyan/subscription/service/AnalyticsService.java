@@ -10,6 +10,7 @@ import com.aathithiyan.subscription.repository.PeriodSpendingProjection;
 import com.aathithiyan.subscription.repository.PriceHistoryRepository;
 import com.aathithiyan.subscription.repository.SubscriptionRepository;
 import com.aathithiyan.subscription.repository.UserRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ public class AnalyticsService {
         this.priceHistoryRepository = priceHistoryRepository;
     }
 
+    @Cacheable(value = "spending_analytics", key = "#userId + '_' + (#period != null ? #period : 'monthly')")
     public SpendingAnalyticsResponse getSpendingAnalytics(Long userId, String period) {
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User", "id", userId);

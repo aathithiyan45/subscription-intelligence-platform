@@ -14,6 +14,8 @@ import com.aathithiyan.subscription.mapper.SubscriptionMapper;
 import com.aathithiyan.subscription.repository.PriceHistoryRepository;
 import com.aathithiyan.subscription.repository.SubscriptionRepository;
 import com.aathithiyan.subscription.repository.UserRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,13 @@ public class SubscriptionService {
         this.subscriptionMapper = subscriptionMapper;
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "overlaps", key = "#userId"),
+            @CacheEvict(value = "renewal_risks", key = "#userId"),
+            @CacheEvict(value = "efficiency_scores", key = "#userId"),
+            @CacheEvict(value = "optimization_opportunities", key = "#userId"),
+            @CacheEvict(value = "spending_analytics", allEntries = true)
+    })
     public SubscriptionResponse createSubscription(Long userId, SubscriptionCreateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
@@ -63,6 +72,13 @@ public class SubscriptionService {
         return subscriptionMapper.toResponse(savedSubscription);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "overlaps", key = "#userId"),
+            @CacheEvict(value = "renewal_risks", key = "#userId"),
+            @CacheEvict(value = "efficiency_scores", key = "#userId"),
+            @CacheEvict(value = "optimization_opportunities", key = "#userId"),
+            @CacheEvict(value = "spending_analytics", allEntries = true)
+    })
     public SubscriptionResponse updateSubscription(Long userId, Long subscriptionId, SubscriptionUpdateRequest request) {
         Subscription subscription = subscriptionRepository.findByIdAndUserId(subscriptionId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Subscription", "id", subscriptionId));
@@ -113,6 +129,13 @@ public class SubscriptionService {
         return PageResponse.from(dtoPage);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "overlaps", key = "#userId"),
+            @CacheEvict(value = "renewal_risks", key = "#userId"),
+            @CacheEvict(value = "efficiency_scores", key = "#userId"),
+            @CacheEvict(value = "optimization_opportunities", key = "#userId"),
+            @CacheEvict(value = "spending_analytics", allEntries = true)
+    })
     public SubscriptionResponse markSubscriptionUsed(Long userId, Long subscriptionId) {
         Subscription subscription = subscriptionRepository.findByIdAndUserId(subscriptionId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Subscription", "id", subscriptionId));
@@ -122,6 +145,13 @@ public class SubscriptionService {
         return subscriptionMapper.toResponse(updated);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "overlaps", key = "#userId"),
+            @CacheEvict(value = "renewal_risks", key = "#userId"),
+            @CacheEvict(value = "efficiency_scores", key = "#userId"),
+            @CacheEvict(value = "optimization_opportunities", key = "#userId"),
+            @CacheEvict(value = "spending_analytics", allEntries = true)
+    })
     public void deleteSubscription(Long userId, Long subscriptionId) {
         Subscription subscription = subscriptionRepository.findByIdAndUserId(subscriptionId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Subscription", "id", subscriptionId));
