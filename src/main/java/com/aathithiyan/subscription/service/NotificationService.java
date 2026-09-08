@@ -11,9 +11,11 @@ import com.aathithiyan.subscription.exception.ResourceNotFoundException;
 import com.aathithiyan.subscription.repository.NotificationLogRepository;
 import com.aathithiyan.subscription.repository.SubscriptionRepository;
 import com.aathithiyan.subscription.repository.UserRepository;
+import jakarta.persistence.OptimisticLockException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,6 +73,8 @@ public class NotificationService {
                         createdCount++;
                     } catch (DataIntegrityViolationException e) {
                         log.warn("DB unique constraint prevented duplicate notification for subscription id {}", sub.getId());
+                    } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
+                        log.warn("Optimistic lock conflict encountered for subscription id {}. Backing off gracefully.", sub.getId());
                     }
                 }
             }
@@ -100,8 +104,12 @@ public class NotificationService {
                         notification.getId(), notification.getRetryCount(), notification.getMaxRetries(), e.getMessage());
             }
 
-            notificationLogRepository.save(notification);
-            processed++;
+            try {
+                notificationLogRepository.save(notification);
+                processed++;
+            } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
+                log.warn("Optimistic lock conflict encountered while saving notification log id {}. Backing off gracefully.", notification.getId());
+            }
         }
 
         return processed;

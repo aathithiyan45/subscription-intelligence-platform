@@ -4,10 +4,12 @@ import com.aathithiyan.subscription.entity.User;
 import com.aathithiyan.subscription.repository.UserRepository;
 import com.aathithiyan.subscription.service.AnalyticsService;
 import com.aathithiyan.subscription.service.DecisionEngineService;
+import jakarta.persistence.OptimisticLockException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -47,14 +49,20 @@ public class BackgroundRecomputeScheduler {
         log.info("Background cache warmer starting recompute for {} users.", users.size());
 
         for (User user : users) {
-            evictUserCaches(user.getId());
+            try {
+                evictUserCaches(user.getId());
 
-            // Warm all signal caches for user
-            decisionEngineService.getOverlaps(user.getId());
-            decisionEngineService.getRenewalRisks(user.getId());
-            decisionEngineService.getEfficiencyScores(user.getId());
-            decisionEngineService.getOptimizationOpportunities(user.getId());
-            analyticsService.getSpendingAnalytics(user.getId(), "monthly");
+                // Warm all signal caches for user
+                decisionEngineService.getOverlaps(user.getId());
+                decisionEngineService.getRenewalRisks(user.getId());
+                decisionEngineService.getEfficiencyScores(user.getId());
+                decisionEngineService.getOptimizationOpportunities(user.getId());
+                analyticsService.getSpendingAnalytics(user.getId(), "monthly");
+            } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
+                log.warn("Optimistic lock conflict encountered during background cache warming for user id {}. Backing off gracefully.", user.getId());
+            } catch (Exception e) {
+                log.warn("Background cache warming error for user id {}: {}", user.getId(), e.getMessage());
+            }
         }
 
         log.info("Background cache warmer completed successfully for {} users.", users.size());
