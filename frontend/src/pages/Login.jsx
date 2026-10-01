@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/authService";
 
@@ -9,6 +9,13 @@ function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            navigate("/dashboard", { replace: true });
+        }
+    }, [navigate]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -39,42 +46,46 @@ function Login() {
     };
 
     return (
-        <div>
-            <h1>Subscription Manager</h1>
-
-            <h2>Login</h2>
-
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Email</label>
-
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        placeholder="Enter your email"
-                        required
-                    />
+        <div className="login-container">
+            <div className="login-card">
+                <div className="login-header">
+                    <div className="login-brand-icon">⚡</div>
+                    <h1>Subscription Intelligence</h1>
+                    <p className="login-subtitle">Sign in to access your platform dashboard</p>
                 </div>
 
-                <div>
-                    <label>Password</label>
+                <form onSubmit={handleSubmit} className="login-form">
+                    <div className="form-group">
+                        <label htmlFor="login-email">Email Address</label>
+                        <input
+                            id="login-email"
+                            type="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            placeholder="Enter your email"
+                            required
+                        />
+                    </div>
 
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        placeholder="Enter your password"
-                        required
-                    />
-                </div>
+                    <div className="form-group">
+                        <label htmlFor="login-password">Password</label>
+                        <input
+                            id="login-password"
+                            type="password"
+                            value={password}
+                            onChange={(event) => setPassword(event.target.value)}
+                            placeholder="Enter your password"
+                            required
+                        />
+                    </div>
 
-                {error && <p>{error}</p>}
+                    {error && <div className="form-error">{error}</div>}
 
-                <button type="submit" disabled={loading}>
-                    {loading ? "Logging in..." : "Login"}
-                </button>
-            </form>
+                    <button type="submit" className="login-button" disabled={loading}>
+                        {loading ? "Logging in..." : "Login"}
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }
