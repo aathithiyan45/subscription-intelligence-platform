@@ -18,7 +18,7 @@ The platform is built using Spring Boot and provides secure REST APIs with JWT a
 * Usage efficiency evaluation
 * Redis-based caching
 * Cache warming
-* Renewal notification processing
+* Renewal notification processing. 
 * Global exception handling
 * Request validation
 * RESTful API architecture
