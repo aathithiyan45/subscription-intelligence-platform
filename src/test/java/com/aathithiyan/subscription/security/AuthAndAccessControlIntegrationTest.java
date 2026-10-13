@@ -4,9 +4,12 @@ import com.aathithiyan.subscription.domain.BillingCycle;
 import com.aathithiyan.subscription.domain.Role;
 import com.aathithiyan.subscription.domain.SubscriptionCategory;
 import com.aathithiyan.subscription.domain.SubscriptionStatus;
+import com.aathithiyan.subscription.dto.AuthResponse;
 import com.aathithiyan.subscription.dto.LoginRequest;
 import com.aathithiyan.subscription.dto.RegisterRequest;
 import com.aathithiyan.subscription.dto.SubscriptionCreateRequest;
+import com.aathithiyan.subscription.entity.User;
+import com.aathithiyan.subscription.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,10 +41,13 @@ class AuthAndAccessControlIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
     void testRegistrationAndLoginFlow() throws Exception {
         String email = "auth_user_" + UUID.randomUUID() + "@example.com";
-        RegisterRequest regReq = new RegisterRequest(email, "secretPassword123", Role.USER);
+        RegisterRequest regReq = new RegisterRequest(email, "secretPassword123");
 
         // 1. Register
         String regResponseBody = mockMvc.perform(post("/auth/register")
@@ -50,6 +57,7 @@ class AuthAndAccessControlIntegrationTest {
                 .andExpect(jsonPath("$.token", notNullValue()))
                 .andExpect(jsonPath("$.tokenType", is("Bearer")))
                 .andExpect(jsonPath("$.email", is(email)))
+                .andExpect(jsonPath("$.role", is("USER")))
                 .andReturn().getResponse().getContentAsString();
 
         // 2. Login
@@ -60,6 +68,38 @@ class AuthAndAccessControlIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token", notNullValue()))
                 .andExpect(jsonPath("$.email", is(email)));
+    }
+
+    @Test
+    void testRegistrationWithAdminRoleCannotEscalatePrivileges() throws Exception {
+        String exploitEmail = "attacker_" + UUID.randomUUID() + "@example.com";
+        String maliciousPayload = "{\"email\":\"" + exploitEmail + "\",\"password\":\"secretPassword123\",\"role\":\"ADMIN\"}";
+
+        var result = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(maliciousPayload))
+                .andReturn();
+
+        int statusCode = result.getResponse().getStatus();
+        if (statusCode == 201) {
+            // If unknown property is ignored by JSON parser, verify role is strictly USER (never ADMIN)
+            String responseJson = result.getResponse().getContentAsString();
+            AuthResponse authResponse = objectMapper.readValue(responseJson, AuthResponse.class);
+            assertEquals(Role.USER, authResponse.getRole(), "Response role must be USER");
+            assertNotEquals(Role.ADMIN, authResponse.getRole(), "Response role must not be ADMIN");
+
+            User savedUser = userRepository.findByEmail(exploitEmail)
+                    .orElseThrow(() -> new AssertionError("User should exist in database"));
+            assertEquals(Role.USER, savedUser.getRole(), "Database user role must be USER");
+            assertNotEquals(Role.ADMIN, savedUser.getRole(), "Database user role must not be ADMIN");
+        } else {
+            // If unknown property is rejected by JSON parser (e.g. 400 Bad Request)
+            assertEquals(400, statusCode, "Expected status 400 Bad Request if extra field is rejected");
+            assertTrue(
+                    userRepository.findByEmail(exploitEmail).isEmpty(),
+                    "Admin user must not be created when request is rejected"
+            );
+        }
     }
 
     @Test
@@ -78,7 +118,7 @@ class AuthAndAccessControlIntegrationTest {
         // Register User A
         String resA = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RegisterRequest(userAEmail, "password123", Role.USER))))
+                        .content(objectMapper.writeValueAsString(new RegisterRequest(userAEmail, "password123"))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
@@ -88,7 +128,7 @@ class AuthAndAccessControlIntegrationTest {
         // Register User B
         String resB = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RegisterRequest(userBEmail, "password123", Role.USER))))
+                        .content(objectMapper.writeValueAsString(new RegisterRequest(userBEmail, "password123"))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 

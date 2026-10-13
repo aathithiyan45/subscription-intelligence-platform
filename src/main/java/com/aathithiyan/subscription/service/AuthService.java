@@ -39,12 +39,10 @@ public class AuthService {
             throw new IllegalArgumentException("Email '" + request.getEmail() + "' is already registered");
         }
 
-        Role role = request.getRole() != null ? request.getRole() : Role.USER;
-
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(role)
+                .role(Role.USER)
                 .build();
 
         User savedUser = userRepository.save(user);
