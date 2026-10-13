@@ -23,6 +23,8 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
+import java.time.temporal.Temporal;
+import java.util.Collection;
 
 @Configuration
 @EnableCaching
@@ -35,8 +37,14 @@ public class CacheConfig implements CachingConfigurer {
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
-                .allowIfSubType(Object.class)
-                .allowIfBaseType(Object.class)
+                .allowIfBaseType("com.aathithiyan.subscription")
+                .allowIfSubType("com.aathithiyan.subscription")
+                .allowIfBaseType(Collection.class)
+                .allowIfSubType(Collection.class)
+                .allowIfBaseType(Number.class)
+                .allowIfSubType(Number.class)
+                .allowIfBaseType(Temporal.class)
+                .allowIfSubType(Temporal.class)
                 .build();
 
         objectMapper.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.EVERYTHING, JsonTypeInfo.As.PROPERTY);
