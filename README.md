@@ -358,13 +358,15 @@ Port: 5432
 Database: subscription_intelligence
 ```
 
-Hibernate is configured to automatically update the database schema during development.
+Database schema management is handled using versioned Flyway migrations located in `src/main/resources/db/migration/`.
+
+Hibernate is configured to validate the schema against entity mappings without modifying the database:
 
 ```properties
-spring.jpa.hibernate.ddl-auto=update
+spring.jpa.hibernate.ddl-auto=validate
 ```
 
-For production environments, a migration-based approach such as Flyway or Liquibase can be considered.
+Flyway executes automatically on application startup with `baseline-on-migrate=true`, ensuring safe, version-controlled schema evolution in production and development environments.
 
 ## Redis
 
