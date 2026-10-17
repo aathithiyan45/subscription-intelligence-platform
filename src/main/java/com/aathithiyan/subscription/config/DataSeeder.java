@@ -11,6 +11,8 @@ import com.aathithiyan.subscription.repository.PriceHistoryRepository;
 import com.aathithiyan.subscription.repository.SubscriptionRepository;
 import com.aathithiyan.subscription.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +20,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Component
+@Profile("!prod")
+@ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true", matchIfMissing = true)
 public class DataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
