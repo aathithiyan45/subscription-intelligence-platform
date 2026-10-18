@@ -71,6 +71,59 @@ class AuthAndAccessControlIntegrationTest {
     }
 
     @Test
+    void testFailedLoginWithIncorrectPasswordReturns401() throws Exception {
+        String email = "fail_login_" + UUID.randomUUID() + "@example.com";
+        RegisterRequest regReq = new RegisterRequest(email, "correctPassword123");
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(regReq)))
+                .andExpect(status().isCreated());
+
+        LoginRequest badLoginReq = new LoginRequest(email, "wrongPassword456");
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(badLoginReq)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status", is(401)))
+                .andExpect(jsonPath("$.error", is("Unauthorized")))
+                .andExpect(jsonPath("$.message", is("Invalid email or password")));
+    }
+
+    @Test
+    void testFailedLoginWithNonExistentUserReturns401() throws Exception {
+        LoginRequest nonExistentLogin = new LoginRequest("nonexistent_" + UUID.randomUUID() + "@example.com", "anyPassword123");
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(nonExistentLogin)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status", is(401)))
+                .andExpect(jsonPath("$.error", is("Unauthorized")))
+                .andExpect(jsonPath("$.message", is("Invalid email or password")));
+    }
+
+    @Test
+    void testDuplicateRegistrationReturns409Conflict() throws Exception {
+        String email = "duplicate_" + UUID.randomUUID() + "@example.com";
+        RegisterRequest regReq = new RegisterRequest(email, "password123");
+
+        // First registration succeeds -> 201 Created
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(regReq)))
+                .andExpect(status().isCreated());
+
+        // Second registration with duplicate email -> 409 Conflict
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(regReq)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status", is(409)))
+                .andExpect(jsonPath("$.error", is("Conflict")))
+                .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("already registered")));
+    }
+
+    @Test
     void testRegistrationWithAdminRoleCannotEscalatePrivileges() throws Exception {
         String exploitEmail = "attacker_" + UUID.randomUUID() + "@example.com";
         String maliciousPayload = "{\"email\":\"" + exploitEmail + "\",\"password\":\"secretPassword123\",\"role\":\"ADMIN\"}";
