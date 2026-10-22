@@ -340,11 +340,25 @@ REDIS_PORT=6379
 CACHE_WARMING_CRON=0 0 2 * * SUN
 NOTIFICATION_RENEWAL_CRON=0 0 8 * * *
 NOTIFICATION_RENEWAL_WINDOW_DAYS=7
+
+# Email Notifications (SMTP)
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
+MAIL_FROM=your_email@gmail.com
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+MAIL_SMTP_CONNECTION_TIMEOUT=5000
+MAIL_SMTP_READ_TIMEOUT=5000
+MAIL_SMTP_WRITE_TIMEOUT=5000
 ```
+
+> **Gmail SMTP Development Option**: For Gmail, enable 2-Step Verification in your Google Account and generate a 16-character **App Password** (`Security > 2-Step Verification > App Passwords`). Use that App Password for `MAIL_PASSWORD`.
 
 The project includes an `.env.example` file as a reference for the required configuration.
 
-Do not commit real database credentials, JWT secrets, API keys, or other sensitive values to GitHub.
+Do not commit real database credentials, JWT secrets, email passwords, API keys, or other sensitive values to GitHub.
 
 ## Database
 
@@ -612,7 +626,7 @@ Potential future improvements include:
 * Subscription recommendation engine
 * Advanced spending analytics
 * Monthly and yearly spending dashboards
-* Email notification integration
+* Webhook / SMS notification channels
 * Docker Compose for PostgreSQL and Redis
 * Automated CI/CD pipeline
 * API documentation using OpenAPI/Swagger
